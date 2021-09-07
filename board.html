@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Socket.IO chat</title>
+    <style type="text/css" rel="stylesheet">
+      body { margin: 0; padding-bottom: 3rem; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+      /* #clear {background: darkred;} */
+      .ctas > button { font-size: 50px; background: #333; border: none; padding: 0.5rem 1rem; margin: 0.25rem 0.5rem; border-radius: 6px; outline: none; color: #fff; }
+      .ctas > .disabled {background: grey;}
+      .ctas { display: flex;}
+      #ctas-top { transform: rotate(180deg); position: fixed; top: 0; left: 0;}
+      #ctas-bottom {position: fixed; bottom: 0; right: 0;}
+      #board {font-size: 300px; display: flex;  margin-left: 10vw; margin-top: 5vh; height: 40vh;}
+      #result {display: flex; margin-top: 5vh; border-top: 1px solid grey;}
+      #result > span {font-size: 250px; display: flex;}
+      .spade {color: black;}
+      .heart {color: red;}
+      .diamond {color: brown;}
+      .club {color: darkblue;}
+    </style>
+  </head>
+  <body>
+    <!-- <h2 id="h-board">This is the board, your ID is: <span id="h-id"></span></h2> -->
+    <div id="ctas-top" class="ctas">
+      <button name="start">Deal</button>
+      <button name="flop">Flop</button>
+      <button name="turn">Turn</button>
+      <button name="river">River</button>
+      <button name="clear" style="background-color: darkred;">Clear</button>
+    </div>
+    <div id="board"></div>
+    <div id="result"></div>
+    <div id="ctas-bottom" class="ctas">
+      <button name="start">Deal</button>
+      <button name="flop">Flop</button>
+      <button name="turn">Turn</button>
+      <button name="river">River</button>
+      <button name="clear" style="background-color: darkred;">Clear</button>
+    </div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const board = document.getElementById('board');
+      const result = document.getElementById('result');
+      const genCard = (card, className) => {
+        const cardSpan = document.createElement('span');
+        cardSpan.innerText = String.fromCodePoint(parseInt(card, 16));
+        cardSpan.classList.add(className);
+        return cardSpan;
+      };
+      const clearDiv = (div) => {
+        while (div.firstChild) {
+          div.firstChild.remove()
+        }
+      };
+      const disableButton = (button) => {
+        button.disabled = true;
+        button.classList.add('disabled');
+      }
+      const enableButton = (button) => {
+        button.disabled = false;
+        button.classList.remove('disabled');
+      }
+    </script>
+
+    <script>
+      var socket = io();
+      socket.on("connect", () => {
+        socket.emit('identify', {type: 'board'});
+        // document.getElementById('h-id').innerHTML = socket.id;
+      });
+
+      const starts = document.getElementsByName('start');
+      starts.forEach(start => {
+        start.addEventListener('click', () => {
+          console.log('starting hand');
+          clearDiv(board);
+          clearDiv(result);
+          socket.emit('start');
+        });
+      });
+
+      const flops = document.getElementsByName('flop');
+      flops.forEach(flop => {
+        flop.addEventListener('click', () => {
+          console.log('heading to flop');
+          socket.emit('flop');
+          // disableButton(flop);
+      });
+      });
+
+      const turns = document.getElementsByName('turn');
+      turns.forEach(turn => {
+        turn.addEventListener('click', () => {
+          console.log('heading to turn');
+          socket.emit('turn');
+          // disableButton(turn);
+      });
+      });
+
+      const rivers = document.getElementsByName('river');
+      rivers.forEach(river => {
+        river.addEventListener('click', () => {
+            console.log('heading to river');
+            socket.emit('river');
+            // disableButton(river);
+        });
+      });
+
+      const clears = document.getElementsByName('clear');
+      clears.forEach(clear => {
+        clear.addEventListener('click', () => {
+            clearDiv(board);
+            clearDiv(result);
+            socket.emit('clear');
+        });
+      });
+
+      socket.on('show card',(cards) => {
+        cards.forEach(({card, className}) => {
+          const cardSpan = genCard(card, className);
+          board.appendChild(cardSpan);
+        });
+      });
+
+      socket.on('show hand', ({player, hand}) => {
+        const playerInfo =  document.createElement('h1');
+        playerInfo.style.color = 'darkgreen';
+        playerInfo.innerText = `${player}`
+        result.appendChild(playerInfo);
+
+        hand.forEach(({card, className}) => {
+          const cardSpan = genCard(card, className);
+          result.appendChild(cardSpan);
+        });
+      })
+
+      // socket.on('')
+
+      // const queryString = window.location.search;
+      // const urlParams = new URLSearchParams(queryString);
+
+      // const isDealer = urlParams.get('d')
+      // if (!isDealer) {
+      //   document.getElementById('h-dealer').style.visibility === "hidden";
+      // } else {
+      //   document.getElementById('h-player').style.visibility === "hidden";
+      // }
+      
+
+      // var messages = document.getElementById('messages');
+      // var form = document.getElementById('form');
+      // var input = document.getElementById('input');
+
+      // form.addEventListener('submit', function(e) {
+      //   e.preventDefault();
+      //   if (input.value) {
+      //     socket.emit('from client', input.value);
+      //     input.value = '';
+      //   }
+      // });
+
+      // socket.on('from server', function(msg) {
+      //   var item = document.createElement('li');
+      //   item.textContent = msg;
+      //   messages.appendChild(item);
+      //   window.scrollTo(0, document.body.scrollHeight);
+      // });
+    </script>
+  </body>
+</html>

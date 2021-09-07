@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Socket.IO chat</title>
+    <style>
+      body { margin: 0; padding-bottom: 3rem; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+      #h-player {font-size: 80px;}
+      button { position: fixed; bottom: 50px; left: 0; font-size: 70px; width: 84%; margin: 0 5rem; background: #333; border: none; padding: 3rem 0; border-radius: 6px; outline: none; color: #fff; }
+      #hand {font-size: 660px; display: flex;}
+      .spade {color: black;}
+      .heart {color: red;}
+      .diamond {color: brown;}
+      .club {color: darkblue;}
+    </style>
+  </head>
+  <body>
+    <h2 id="h-player">You are a player, your username is: <span id="h-id"></span></h2>
+    <div id="hand"></div>
+    <button id="show">Show hand</button>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const hand = document.getElementById('hand')
+      const genCard = (card, className) => {
+        const cardSpan = document.createElement('span');
+        cardSpan.innerText = String.fromCodePoint(parseInt(card, 16));
+        cardSpan.classList.add(className);
+        return cardSpan;
+      };
+      const clearHand = () => {
+        while (hand.firstChild) {
+          hand.firstChild.remove()
+        }
+      };
+    </script>
+
+    <script>
+      var socket = io();
+
+      socket.on("connect", () => {
+        const url = new URL(window.location.href);
+        const searchParams = new URLSearchParams(url.search);
+        const username = searchParams.get('n');
+        
+        socket.emit('identify', {type: 'player', username});
+        document.getElementById('h-id').innerHTML = username;
+      });
+
+      socket.on('first card', ({card, className}) => {
+        clearHand();
+        const cardSpan = genCard(card, className);
+        hand.appendChild(cardSpan);
+      });
+
+      socket.on('second card', ({card, className}) => {
+        const cardSpan = genCard(card, className);
+        hand.appendChild(cardSpan);
+      });
+
+      socket.on('clear', () => {
+        clearHand();
+      });
+      
+      const show = document.getElementById('show');
+      show.addEventListener('click', () => {
+          console.log('showing player hand');
+          socket.emit('show hand');
+      });
+    </script>
+  </body>
+</html>
