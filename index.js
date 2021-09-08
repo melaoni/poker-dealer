@@ -5,8 +5,9 @@ const port = process.env.PORT || 3000;
 
 let boardId;
 const players = new Map();
-const idToPlayer = {};
+const idToPlayer = new Map();
 const playerHand = new Map();
+let dealer = 0; // index of player keys
 
 app.get('/', (req, res) => {
   if(req.query.type === 'b') {
@@ -16,6 +17,14 @@ app.get('/', (req, res) => {
   }
 });
 
+const clearState = () => {
+  console.log('clearing state');
+  players.forEach((value, key) => {
+    io.to(value).emit('clear'); // tell client to clear display
+    playerHand.set(key, []); // clearing player cards on server
+  });
+}
+
 io.on('connection', (socket) => {
   socket.on('identify', msg => {
     console.log('identify', msg);
@@ -24,23 +33,24 @@ io.on('connection', (socket) => {
       boardId = socket.id;
     } else if (msg.type === 'player') {
       players.set(msg.username, socket.id);
+      idToPlayer.set(socket.id, msg.username);
       playerHand.set(msg.username, []); // initing player cards
-      idToPlayer[socket.id] = msg.username;
     }
+
+    io.to(boardId).emit('players', Array.from(players.keys()));
     console.log('boardId', boardId);
-    console.log('players', players);
-    console.log('playerHand', playerHand);
+    console.log('players', players.keys());
   });
 
   socket.on("disconnect", () => {
     console.log('disconnected', socket.id);
-    const disconnectedPlayer = idToPlayer[socket.id];
+    const disconnectedPlayer = idToPlayer.get(socket.id);
     players.delete(disconnectedPlayer);
-    delete idToPlayer[socket.id];
+    idToPlayer.delete(socket.id);
     playerHand.delete(disconnectedPlayer, [])
 
+    io.to(boardId).emit('players', Array.from(players.keys()));
     console.log('players', players);
-    console.log('idToPlayer', idToPlayer);
   });
 });
 
@@ -77,8 +87,19 @@ const shuffle = () => {
   return deck;
 }
 
+const notifyDealer = () => {
+  const p = Array.from(players.keys());
+  const playerId = players.get(p[dealer]);
+  io.to(playerId).emit('button');
+  dealer = (dealer + 1) % p.length;
+  console.log("Dealer", p[dealer]);
+};
+
 io.on('connection', (socket) => {
   socket.on("start", () => {
+    clearState();
+    notifyDealer();
+
     console.log('starting shuffle');
     shuffledDeck = shuffle();
 
@@ -133,7 +154,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('show hand', () => {
-    const player = idToPlayer[socket.id];
+    const player = idToPlayer.get(socket.id);
     console.log('showing hand', player);
     io.to(boardId).emit('show hand', {player, hand: playerHand.get(player)});
   });

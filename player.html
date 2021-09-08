@@ -1,26 +1,29 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Socket.IO chat</title>
+    <title>Player</title>
     <style>
       body { margin: 0; padding-bottom: 3rem; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-      #h-player {font-size: 80px;}
-      button { position: fixed; bottom: 50px; left: 0; font-size: 70px; width: 84%; margin: 0 5rem; background: #333; border: none; padding: 3rem 0; border-radius: 6px; outline: none; color: #fff; }
-      #hand {font-size: 660px; display: flex;}
+      #h-player {font-size: 4rem; margin: 5rem 5rem 0 5rem;}
+      #show {position: fixed; bottom: 50px; left: 0; font-size: 4rem; width: 84%; margin: 0 5rem; background: #333; border: none; padding: 3rem 0; border-radius: 6px; outline: none; color: #fff; }
+      #hand {font-size: 40rem; display: flex; margin: 3rem; line-height: 1}
       .spade {color: black;}
       .heart {color: red;}
       .diamond {color: brown;}
       .club {color: darkblue;}
+      .hidden {visibility: hidden;}
+      #dealer-button {margin: auto; margin-top: 15vw; height: 25vw; width: 40vw; padding-top: 15vw; font-size: 5rem; font-weight: bold; font-family: monospace; text-align: center; border: 0.5rem solid black; border-radius: 50%;}
     </style>
   </head>
   <body>
     <h2 id="h-player">You are a player, your username is: <span id="h-id"></span></h2>
     <div id="hand"></div>
+    <div id="dealer-button" class="hidden">Dealer</div>
     <button id="show">Show hand</button>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-      const hand = document.getElementById('hand')
+      const hand = document.getElementById('hand');
       const genCard = (card, className) => {
         const cardSpan = document.createElement('span');
         cardSpan.innerText = String.fromCodePoint(parseInt(card, 16));
@@ -31,6 +34,13 @@
         while (hand.firstChild) {
           hand.firstChild.remove()
         }
+      };
+      const dealerButton = document.getElementById('dealer-button');
+      const showDealerButton = () => {
+        dealerButton.classList.remove("hidden");
+      };
+      const hideDealerButton = () => {
+        dealerButton.classList.add("hidden");
       };
     </script>
 
@@ -47,7 +57,6 @@
       });
 
       socket.on('first card', ({card, className}) => {
-        clearHand();
         const cardSpan = genCard(card, className);
         hand.appendChild(cardSpan);
       });
@@ -59,6 +68,11 @@
 
       socket.on('clear', () => {
         clearHand();
+        hideDealerButton();
+      });
+
+      socket.on('button', () => {
+        showDealerButton();
       });
       
       const show = document.getElementById('show');
