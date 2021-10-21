@@ -5,9 +5,8 @@
     <style type="text/css" rel="stylesheet">
       body { margin: 0; padding-bottom: 3rem; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
 
-      .ctas > button { font-size: 50px; background: #333; border: none; padding: 0.5rem 1rem; margin: 0.25rem 0.5rem; border-radius: 6px; outline: none; color: #fff; }
-      .ctas > .disabled {background: grey;}
       .ctas { display: flex;}
+      .ctas > button { width: 100px; height: 100px; background: #333; border: none; margin: 0.25rem 0.5rem; border-radius: 6px; outline: none; color: #fff; }
       #ctas-top { transform: rotate(180deg); position: fixed; top: 0; left: 0;}
       #ctas-bottom {position: fixed; bottom: 0; right: 0;}
 
@@ -25,11 +24,16 @@
   </head>
   <body>
     <div id="ctas-top" class="ctas">
-      <button name="start">Deal</button>
-      <button name="flop">Flop</button>
-      <button name="turn">Turn</button>
-      <button name="river">River</button>
-      <button name="clear" style="background-color: darkred;">Clear</button>
+      <button name="next">
+        <svg xmlns="http://www.w3.org/2000/svg" width="70" height="70" fill="currentColor" class="bi bi-play-fill" viewBox="0 0 16 16">
+          <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
+        </svg>
+    </button>
+      <button name="clear" style="background-color: darkred;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="70" height="70" fill="currentColor" class="bi bi-stop-fill" viewBox="0 0 16 16">
+          <path d="M5 3.5h6A1.5 1.5 0 0 1 12.5 5v6a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 11V5A1.5 1.5 0 0 1 5 3.5z"/>
+        </svg>
+      </button>
     </div>
     <h2 id="player-count">Players connected: <span id="players"></span></h2>
     <div>
@@ -37,11 +41,16 @@
       <div id="result"></div>
     </div>
     <div id="ctas-bottom" class="ctas">
-      <button name="start">Deal</button>
-      <button name="flop">Flop</button>
-      <button name="turn">Turn</button>
-      <button name="river">River</button>
-      <button name="clear" style="background-color: darkred;">Clear</button>
+      <button name="next">
+        <svg xmlns="http://www.w3.org/2000/svg" width="70" height="70" fill="currentColor" class="bi bi-play-fill" viewBox="0 0 16 16">
+          <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
+        </svg>
+      </button>
+      <button name="clear" style="background-color: darkred;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="70" height="70" fill="currentColor" class="bi bi-stop-fill" viewBox="0 0 16 16">
+          <path d="M5 3.5h6A1.5 1.5 0 0 1 12.5 5v6a1.5 1.5 0 0 1-1.5 1.5H5A1.5 1.5 0 0 1 3.5 11V5A1.5 1.5 0 0 1 5 3.5z"/>
+        </svg>
+      </button>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
@@ -63,14 +72,6 @@
         clearDiv(board);
         clearDiv(result);
       };
-      const disableButton = (button) => {
-        button.disabled = true;
-        button.classList.add('disabled');
-      }
-      const enableButton = (button) => {
-        button.disabled = false;
-        button.classList.remove('disabled');
-      }
     </script>
 
     <script>
@@ -80,39 +81,11 @@
         // document.getElementById('h-id').innerHTML = socket.id;
       });
 
-      const starts = document.getElementsByName('start');
-      starts.forEach(start => {
+      const nexts = document.getElementsByName('next');
+      nexts.forEach(start => {
         start.addEventListener('click', () => {
-          console.log('starting hand');
-          clearState();
-          socket.emit('start');
-        });
-      });
-
-      const flops = document.getElementsByName('flop');
-      flops.forEach(flop => {
-        flop.addEventListener('click', () => {
-          console.log('heading to flop');
-          socket.emit('flop');
-          // disableButton(flop);
-      });
-      });
-
-      const turns = document.getElementsByName('turn');
-      turns.forEach(turn => {
-        turn.addEventListener('click', () => {
-          console.log('heading to turn');
-          socket.emit('turn');
-          // disableButton(turn);
-      });
-      });
-
-      const rivers = document.getElementsByName('river');
-      rivers.forEach(river => {
-        river.addEventListener('click', () => {
-            console.log('heading to river');
-            socket.emit('river');
-            // disableButton(river);
+          console.log('clicked next');
+          socket.emit('next');
         });
       });
 

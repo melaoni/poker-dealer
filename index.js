@@ -3,11 +3,15 @@ const http = require('http').Server(app);
 const io = require('socket.io')(http);
 const port = process.env.PORT || 3000;
 
+const STREETS = ['DEAL', 'FLOP', 'TURN', 'RIVER'];
+
 let boardId;
 const players = new Map();
 const idToPlayer = new Map();
 const playerHand = new Map();
 let dealer = 0; // index of player keys
+
+let street = undefined;
 
 app.get('/', (req, res) => {
   if(req.query.type === 'b') {
@@ -23,6 +27,7 @@ const clearState = () => {
     io.to(value).emit('clear'); // tell client to clear display
     playerHand.set(key, []); // clearing player cards on server
   });
+  street = undefined;
 }
 
 io.on('connection', (socket) => {
@@ -92,65 +97,69 @@ const notifyDealer = () => {
   const playerId = players.get(p[dealer]);
   io.to(playerId).emit('button');
   dealer = (dealer + 1) % p.length;
-  console.log("Dealer", p[dealer]);
+  console.log("Dealer is", p[dealer]);
 };
 
 io.on('connection', (socket) => {
-  socket.on("start", () => {
-    clearState();
-    notifyDealer();
-
-    console.log('starting shuffle');
-    shuffledDeck = shuffle();
-
-    players.forEach((value, key) => {
-      console.log('dealing 1st card to %s', key)
-      playerHand.set(key, []);
-
-      const card = shuffledDeck.pop();
-      io.to(value).emit('first card', card);
-      playerHand.get(key).push(card);
-
-    });
-
-    players.forEach((value, key) => {
-      console.log('dealing 2nd card to %s', key)
-      
-      const card = shuffledDeck.pop();
-      io.to(value).emit('second card', card);
-      playerHand.get(key).push(card);
-    })
-  });
-
-  socket.on('flop', () => {
-    console.log('going to flop');
-    shuffledDeck.pop(); // burn card
-    const flop = [];
-
-    for (i=0; i<3;i++) {
-      flop.push(shuffledDeck.pop());
+  socket.on('next', () => {
+    if (street === undefined) {
+      street = 'DEAL';
     }
-    io.to(boardId).emit('show card', flop);
-  });
 
-  socket.on('turn', () => {
-    console.log('going to turn');
-    shuffledDeck.pop(); // burn card
-    io.to(boardId).emit('show card', [shuffledDeck.pop()]);
-  });
+    switch (street) {
+      case 'DEAL':
+        clearState();
+        notifyDealer();
 
-  socket.on('river', () => {
-    console.log('going to river');
-    shuffledDeck.pop(); // burn card
-    io.to(boardId).emit('show card', [shuffledDeck.pop()]);
+        console.log('starting shuffle');
+        shuffledDeck = shuffle();
+
+        players.forEach((value, key) => {
+          console.log('dealing 1st card to %s', key)
+          playerHand.set(key, []);
+
+          const card = shuffledDeck.pop();
+          io.to(value).emit('first card', card);
+          playerHand.get(key).push(card);
+
+        });
+        players.forEach((value, key) => {
+          console.log('dealing 2nd card to %s', key)
+          
+          const card = shuffledDeck.pop();
+          io.to(value).emit('second card', card);
+          playerHand.get(key).push(card);
+        });
+        street = 'FLOP'; // update street state
+        break;
+      case 'FLOP':
+        console.log('going to flop');
+        shuffledDeck.pop(); // burn card
+        const flop = [];
+
+        for (i=0; i<3;i++) {
+          flop.push(shuffledDeck.pop());
+        }
+        io.to(boardId).emit('show card', flop);
+        street = 'TURN'; // update street state
+        break;
+      case 'TURN':
+        console.log('going to turn');
+        shuffledDeck.pop(); // burn card
+        io.to(boardId).emit('show card', [shuffledDeck.pop()]);
+        street = 'RIVER'; // update street state
+        break;
+      case 'RIVER':
+        console.log('going to river');
+        shuffledDeck.pop(); // burn card
+        io.to(boardId).emit('show card', [shuffledDeck.pop()]);
+        street = undefined;
+        break;
+    }
   });
 
   socket.on('clear', () => {
-    console.log('clearing');
-    players.forEach((value, key) => {
-      io.to(value).emit('clear'); // tell client to clear display
-      playerHand.set(key, []); // clearing player cards on server
-    });
+    clearState();
   });
 
   socket.on('show hand', () => {
